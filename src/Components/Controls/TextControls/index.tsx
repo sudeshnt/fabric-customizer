@@ -58,7 +58,7 @@ const TextControls = () => {
         <Form.Item label="Text">
           <Input value={text} onChange={onChangeText} />
         </Form.Item>
-        <Form.Item label="Font Size">
+        <Form.Item label={`Font Size: ${fontSize}`}>
           <Slider
             min={10}
             max={100}
