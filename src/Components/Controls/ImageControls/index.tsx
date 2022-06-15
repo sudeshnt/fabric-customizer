@@ -1,9 +1,13 @@
 import { Button, Form, Input } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-import { ChangeEvent, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import isNil from "lodash/isNil";
 import { useCanvasRef } from "../../../Hooks/useCanvas";
 import { fabric } from "fabric";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../Store";
+import { ObjectType } from "..";
+import { addFabricImage, isBase64 } from "../../../Utils/utils";
 
 const defaultImageWidth = 100;
 const defaultImageHeight = 100;
@@ -11,9 +15,27 @@ const defaultImageHeight = 100;
 const ImageControls = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useCanvasRef();
+  const selectedObject = useSelector(
+    (state: RootState) => state.customize.selectedObject
+  );
+  const imageObject =
+    selectedObject && selectedObject.data?.type === ObjectType.Image
+      ? (selectedObject as fabric.Image)
+      : null;
+
   const [image, setImage] = useState<string | ArrayBuffer | null>();
   const [imageWidth, setImageWidth] = useState(defaultImageWidth);
   const [imageHeight, setImageHeight] = useState(defaultImageHeight);
+
+  useEffect(() => {
+    if (imageObject) {
+      setImage(imageObject.toDataURL({}));
+      setImageWidth(imageObject.get("width") ?? defaultImageWidth);
+      setImageHeight(imageObject.get("height") ?? defaultImageHeight);
+    } else {
+      clearInputs();
+    }
+  }, [imageObject]);
 
   const handleSelectFile = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -31,17 +53,28 @@ const ImageControls = () => {
   const onAddImage = () => {
     if (!image) return;
 
-    fabric.Image.fromURL(image as string, (img) => {
-      const imageObj = img.set({
-        left: 100,
-        top: 100,
+    if (imageObject) {
+      if (!isBase64(image)) {
+        addFabricImage({
+          src: image,
+          fabricCanvas: canvasRef.current,
+          options: {
+            width: 100,
+            height: 100,
+          },
+        });
+      }
+    } else {
+      addFabricImage({
+        src: image,
+        fabricCanvas: canvasRef.current,
+        options: {
+          width: 100,
+          height: 100,
+        },
       });
-      imageObj.scaleToWidth(imageWidth || defaultImageWidth);
-      imageObj.scaleToHeight(imageHeight || defaultImageWidth);
-      console.log(imageObj);
-
-      canvasRef.current?.add(imageObj).renderAll();
-    });
+    }
+    clearInputs();
   };
 
   const onDimensionsChanged = (
@@ -54,6 +87,13 @@ const ImageControls = () => {
     }
     setImageHeight(parseInt(e.target.value));
   };
+
+  const clearInputs = () => {
+    setImage(null);
+    setImageWidth(defaultImageWidth);
+    setImageHeight(defaultImageHeight);
+  };
+
   return (
     <div>
       <Form layout="vertical">
@@ -94,7 +134,9 @@ const ImageControls = () => {
           </span>
         </Form.Item>
         <Form.Item>
-          <Button onClick={onAddImage}>Add Image</Button>
+          <Button onClick={onAddImage}>
+            {imageObject ? "Updata Image" : "Add Image"}
+          </Button>
         </Form.Item>
       </Form>
     </div>

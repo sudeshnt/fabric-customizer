@@ -1,21 +1,39 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Input, Slider, Button, Form } from "antd";
 import { TextControlsContainer } from "./styles";
-import { useDispatch, useSelector } from "react-redux";
-import { Dispatch } from "../../../Store";
+import { useSelector } from "react-redux";
+import { RootState } from "../../../Store";
 import { fabric } from "fabric";
 import { useCanvasRef } from "../../../Hooks/useCanvas";
+import { ObjectType } from "..";
 
 const defaultText = "";
 const defaultFontColor = "#000000";
 const defaultFontSize = 11;
 
 const TextControls = () => {
-  const dispatch = useDispatch<Dispatch>();
   const canvasRef = useCanvasRef();
+  const selectedObject = useSelector(
+    (state: RootState) => state.customize.selectedObject
+  );
+  const textObject =
+    selectedObject && selectedObject.data?.type === ObjectType.Text
+      ? (selectedObject as fabric.Text)
+      : null;
+
   const [text, setText] = useState(defaultText);
   const [fontSize, setFontSize] = useState(defaultFontSize);
   const [fontColor, setFontColor] = useState(defaultFontColor);
+
+  useEffect(() => {
+    if (textObject) {
+      setText(textObject.get("text") ?? defaultText);
+      setFontSize(textObject.get("fontSize") ?? defaultFontSize);
+      setFontColor((textObject.get("fill") as string) ?? defaultFontColor);
+    } else {
+      clearInputs();
+    }
+  }, [textObject]);
 
   const onChangeText = (e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value);
@@ -29,21 +47,28 @@ const TextControls = () => {
     setFontColor(e.target.value);
   };
 
-  const onAddText = () => {
+  const onSubmit = () => {
     // dispatch.customize.addObject(new fabric.Text("asd", {}));
     if (!text) return;
 
-    canvasRef.current?.add(
-      new fabric.Text(text, {
-        fontSize,
-        fill: fontColor,
-        selectable: true,
-        left: 100,
-        top: 100,
-      })
-    );
+    if (textObject) {
+      textObject.set("text", text);
+      textObject.set("fontSize", fontSize);
+      textObject.set("fill", fontColor);
+      canvasRef.current?.renderAll();
+    } else {
+      canvasRef.current?.add(
+        new fabric.Text(text, {
+          fontSize,
+          fill: fontColor,
+          selectable: true,
+          left: 100,
+          top: 100,
+        })
+      );
+    }
+    canvasRef.current?.renderAll();
     clearInputs();
-    // canvasRef.current?.renderAll();
   };
 
   const clearInputs = () => {
@@ -75,7 +100,9 @@ const TextControls = () => {
           />
         </Form.Item>
         <Form.Item>
-          <Button onClick={onAddText}>Add Text</Button>
+          <Button onClick={onSubmit}>
+            {selectedObject ? "Update Text" : "Add Text"}
+          </Button>
         </Form.Item>
       </Form>
     </TextControlsContainer>

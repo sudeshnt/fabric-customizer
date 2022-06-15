@@ -1,28 +1,21 @@
 import { fabric } from "fabric";
 import { createModel } from "@rematch/core";
 
-interface InitialState {
-  objects: Array<fabric.Object>;
+interface RootState {
+  selectedObject: fabric.Object | null;
 }
 
-const initialState: InitialState = {
-  objects: [],
+const initialState: RootState = {
+  selectedObject: null,
 };
 
 export const customize = createModel()({
   state: initialState,
   reducers: {
-    placeCanvas: (state, payload: fabric.Canvas) => {
-      console.log(payload);
+    setSelectedObject: (state, payload: fabric.Object | null) => {
       return {
         ...state,
-        canvas: payload,
-      };
-    },
-    addObject: (state, payload: fabric.Object) => {
-      return {
-        ...state,
-        objects: [...state.objects, payload],
+        selectedObject: payload,
       };
     },
   },

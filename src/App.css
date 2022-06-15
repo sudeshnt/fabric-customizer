@@ -4,7 +4,12 @@
 }
 
 .Content {
+    width: 70%;
     max-width: 800px;
+}
+
+Col {
+    background-color: #ffffff;
 }
 
 img {
